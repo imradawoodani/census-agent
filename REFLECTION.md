@@ -113,6 +113,8 @@ This would allow the system to:
 
 Or we could also fix this with a better understanding of our dataset and schema fed to the model and decoupling the process into one more multiagentic that allows routing between qualitative (RAG) data fetching and quantitative data fetching as required by the question.
 
+While testing, I observed cases where the agent failed to provide answers, particularly for queries requiring more granular or relational data like comparing poverty rates between counties. For example, asking about the poverty rate in Dallas County versus Culberson County consistently returned a failure message. This highlights a current limitation: the agent can retrieve state-level or high-level summary data but struggles with fine-grained or multi-step queries. Given more time, I would enhance the system with better query decomposition, more comprehensive data coverage, and fallback strategies for partially answerable queries. Some queries returned no data at all, even though the question seemed straightforward. For instance, asking about the poverty rate in Mississippi resulted in a response indicating no matching data. This reveals a limitation in my current approach. The agent relies on preprocessed and embedded datasets much more than it should.
+
 ---
 
 ## Testing Strategy and Tradeoffs
