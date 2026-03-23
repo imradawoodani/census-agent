@@ -16,7 +16,6 @@ No login required. Open the URL and try these questions:
 |---|---|
 | Population | What is the population of California? |
 | Income | Which 5 states have the highest median household income? |
-| Poverty | What is the poverty rate in Mississippi? |
 | Race/ethnicity | What percentage of Florida residents are Hispanic? |
 | Education | What percentage of California adults have a bachelor's degree? |
 | Housing | What is the homeownership rate in Ohio? |
