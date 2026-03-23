@@ -4,6 +4,7 @@ FastAPI application — chat endpoint with SSE streaming.
 import time
 import uuid
 from contextlib import asynccontextmanager
+import asyncio
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,7 +25,8 @@ _agent = CensusAgent()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await _agent.init()
+    # await _agent.init()
+    asyncio.create_task(_agent.init())
     yield
 
 
@@ -74,7 +76,7 @@ async def health():
     sf_ok = await snowflake_client.health_check()
     redis_ok = await _agent.session_manager.health_check()
     return {
-        "status": "ok" if sf_ok else "degraded",
+        "status": "ok" if _agent._ready else "starting",
         "snowflake": sf_ok,
         "redis": redis_ok,
         "agent_ready": _agent._ready,
