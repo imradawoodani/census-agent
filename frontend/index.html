@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>US Census Data Assistant</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d26;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #3b82f6;
+      --accent-dim: #1d4ed8;
+      --text: #e8eaf0;
+      --text-dim: #8892a4;
+      --user-bg: #1e3a5f;
+      --assistant-bg: #1a1d26;
+      --status: #64748b;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-left h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .header-left p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--status);
+      transition: background 0.3s;
+    }
+    .status-dot.connected { background: var(--success); }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 0;
+      scroll-behavior: smooth;
+    }
+
+    .messages-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 40px 0 24px;
+      color: var(--text-dim);
+    }
+
+    .welcome h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .welcome p {
+      font-size: 0.875rem;
+      max-width: 480px;
+      margin: 0 auto 20px;
+      line-height: 1.6;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .suggestion {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .suggestion:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.15s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .user .avatar { background: var(--accent-dim); color: #fff; }
+    .assistant .avatar { background: var(--surface2); color: var(--text-dim); }
+
+    .bubble {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      max-width: 600px;
+    }
+
+    .user .bubble { background: var(--user-bg); color: var(--text); }
+    .assistant .bubble { background: var(--assistant-bg); border: 1px solid var(--border); color: var(--text); }
+
+    .status-line {
+      font-size: 0.78rem;
+      color: var(--status);
+      padding: 4px 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .spinner {
+      width: 12px; height: 12px;
+      border: 1.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .feedback {
+      display: flex; gap: 6px;
+      margin-top: 8px;
+    }
+
+    .fb-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px;
+      font-size: 0.75rem; color: var(--text-dim);
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .fb-btn:hover { border-color: var(--accent); color: var(--text); }
+    .fb-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    .input-area {
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .input-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.875rem;
+      resize: none;
+      min-height: 44px;
+      max-height: 160px;
+      line-height: 1.5;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      background: var(--accent);
+      border: none; border-radius: 8px;
+      width: 44px; height: 44px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 1rem;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { background: var(--accent-dim); }
+    .send-btn:disabled { background: var(--surface2); cursor: not-allowed; }
+
+    .new-chat {
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 12px;
+      color: var(--text-dim); font-size: 0.75rem;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .new-chat:hover { border-color: var(--border); color: var(--text); }
+
+    .disclaimer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 8px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>US Census Data Assistant</h1>
+      <p>DigitalOcean · Llama 3.3 70B · Snowflake · SafeGraph Census 2020</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="new-chat" onclick="newConversation()">↺ New conversation</button>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+  </header>
+
+  <div class="messages" id="messages">
+    <div class="messages-inner">
+      <div class="welcome" id="welcome">
+        <h2>Ask about the US population</h2>
+        <p>This agent queries the 2020 US Census dataset (SafeGraph Open Census Data) 
+           and answers your questions with real data.</p>
+        <div class="suggestions">
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the population of California?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">Which 5 states have the highest median household income?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What percentage of Texas residents are Hispanic?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the poverty rate in Mississippi?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">How many veterans live in Texas?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the homeownership rate in Ohio?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-inner">
+      <textarea id="input" placeholder="Ask about US population, income, demographics…" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <p class="disclaimer">2020 ACS Census data · Not for real-time or individual-level queries</p>
+  </div>
+
+  <script>
+    let sessionId = crypto.randomUUID();
+    let isStreaming = false;
+
+    // Check health on load
+    fetch('/api/health').then(r => r.json()).then(data => {
+      if (data.snowflake) {
+        document.getElementById('statusDot').classList.add('connected');
+      }
+    }).catch(() => {});
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function sendSuggestion(el) {
+      document.getElementById('input').value = el.textContent;
+      sendMessage();
+    }
+
+    function newConversation() {
+      sessionId = crypto.randomUUID();
+      const msgs = document.getElementById('messages');
+      const inner = msgs.querySelector('.messages-inner');
+      inner.innerHTML = `<div class="welcome" id="welcome">
+        <h2>Ask about the US population</h2>
+        <p>This agent queries the 2020 US Census dataset (SafeGraph Open Census Data) 
+           and answers your questions with real data.</p>
+        <div class="suggestions">
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the population of California?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">Which 5 states have the highest median household income?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What percentage of Texas residents are Hispanic?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the poverty rate in Mississippi?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">How many veterans live in Texas?</div>
+          <div class="suggestion" onclick="sendSuggestion(this)">What is the homeownership rate in Ohio?</div>
+        </div>
+      </div>`;
+    }
+
+    function scrollToBottom() {
+      const msgs = document.getElementById('messages');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addMessage(role, content) {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+
+      const inner = document.querySelector('.messages-inner');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerHTML = `
+        <div class="avatar">${role === 'user' ? 'U' : 'C'}</div>
+        <div>
+          <div class="bubble" id="bubble-${Date.now()}">${escapeHtml(content)}</div>
+          ${role === 'assistant' ? `
+          <div class="feedback">
+            <button class="fb-btn" onclick="feedback(this, 'up')">👍</button>
+            <button class="fb-btn" onclick="feedback(this, 'down')">👎</button>
+          </div>` : ''}
+        </div>`;
+      inner.appendChild(div);
+      scrollToBottom();
+      return div.querySelector('.bubble');
+    }
+
+    function feedback(btn, type) {
+      const buttons = btn.parentElement.querySelectorAll('.fb-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.appendChild(document.createTextNode(text));
+      return d.innerHTML;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('input');
+      const message = input.value.trim();
+      if (!message || isStreaming) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      isStreaming = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      addMessage('user', message);
+
+      // Create assistant bubble
+      const welcome2 = document.getElementById('welcome');
+      if (welcome2) welcome2.remove();
+      const inner = document.querySelector('.messages-inner');
+      const assistantDiv = document.createElement('div');
+      assistantDiv.className = 'message assistant';
+      assistantDiv.innerHTML = `
+        <div class="avatar">C</div>
+        <div>
+          <div class="status-line" id="statusLine"><div class="spinner"></div><span id="statusText">Thinking…</span></div>
+          <div class="bubble" id="responseBubble" style="display:none"></div>
+          <div class="feedback" style="display:none" id="feedbackDiv">
+            <button class="fb-btn" onclick="feedback(this, 'up')">👍</button>
+            <button class="fb-btn" onclick="feedback(this, 'down')">👎</button>
+          </div>
+        </div>`;
+      inner.appendChild(assistantDiv);
+      scrollToBottom();
+
+      try {
+        const response = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, session_id: sessionId }),
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const bubble = document.getElementById('responseBubble');
+        const statusLine = document.getElementById('statusLine');
+        const statusText = document.getElementById('statusText');
+        let buffer = '';
+        let responseText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: status')) continue;
+            if (line.startsWith('event: done')) continue;
+            if (line.startsWith('event: error')) continue;
+            if (line.startsWith('data: [DONE]')) continue;
+
+            if (line.startsWith('data: ') && line.includes('')) {
+              const raw = line.slice(6);
+              // Check if this was preceded by a status event
+            }
+
+            // Handle the SSE properly
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              // If we haven't shown the bubble yet, check if this looks like status
+              responseText += data;
+              if (statusLine) {
+                statusLine.style.display = 'none';
+              }
+              bubble.style.display = 'block';
+              bubble.textContent = responseText;
+              document.getElementById('feedbackDiv').style.display = 'flex';
+              scrollToBottom();
+            }
+
+            if (line.startsWith('event: status')) {
+              // Next data line is status text
+            }
+          }
+
+          // Re-process to handle status events correctly
+          const allLines = (buffer ? '' : '') + lines.join('\n');
+        }
+
+        // Fix: proper SSE parsing
+        if (!responseText) {
+          bubble.textContent = 'No response received.';
+          bubble.style.display = 'block';
+          if (statusLine) statusLine.style.display = 'none';
+        }
+
+      } catch (err) {
+        const bubble = document.getElementById('responseBubble');
+        const statusLine = document.getElementById('statusLine');
+        if (statusLine) statusLine.style.display = 'none';
+        if (bubble) { bubble.style.display = 'block'; bubble.textContent = 'Connection error. Please try again.'; }
+      } finally {
+        isStreaming = false;
+        document.getElementById('sendBtn').disabled = false;
+        input.focus();
+      }
+    }
+  </script>
+
+  <script>
+    // Proper SSE client - replaces the fetch-based approach above
+    // Override sendMessage with correct implementation
+    async function sendMessage() {
+      const input = document.getElementById('input');
+      const message = input.value.trim();
+      if (!message || isStreaming) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      isStreaming = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      addMessage('user', message);
+
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+
+      const inner = document.querySelector('.messages-inner');
+      const assistantDiv = document.createElement('div');
+      assistantDiv.className = 'message assistant';
+      const bubbleId = 'bubble-' + Date.now();
+      assistantDiv.innerHTML = `
+        <div class="avatar">C</div>
+        <div>
+          <div class="status-line" id="sl-${bubbleId}">
+            <div class="spinner"></div>
+            <span id="st-${bubbleId}">Thinking…</span>
+          </div>
+          <div class="bubble" id="${bubbleId}" style="display:none"></div>
+          <div class="feedback" style="display:none" id="fb-${bubbleId}">
+            <button class="fb-btn" onclick="feedback(this,'up')">👍</button>
+            <button class="fb-btn" onclick="feedback(this,'down')">👎</button>
+          </div>
+        </div>`;
+      inner.appendChild(assistantDiv);
+      scrollToBottom();
+
+      const bubble = document.getElementById(bubbleId);
+      const statusLine = document.getElementById('sl-' + bubbleId);
+      const statusText = document.getElementById('st-' + bubbleId);
+      const feedbackDiv = document.getElementById('fb-' + bubbleId);
+
+      let responseText = '';
+      let lastEventType = 'message';
+
+      try {
+        const resp = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, session_id: sessionId }),
+        });
+
+        const reader = resp.body.getReader();
+        const dec = new TextDecoder();
+        let raw = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          raw += dec.decode(value, { stream: true });
+
+          // Process complete SSE lines
+          let nl;
+          while ((nl = raw.indexOf('\n')) !== -1) {
+            const line = raw.slice(0, nl);
+            raw = raw.slice(nl + 1);
+
+            if (line.startsWith('event:')) {
+              lastEventType = line.slice(6).trim();
+            } else if (line.startsWith('data:')) {
+              const data = line.slice(5).replace(/^\s/, '');  // strip exactly one leading space (SSE spec)
+              if (data === '[DONE]') break;
+
+              if (lastEventType === 'status') {
+                statusText.textContent = data;
+              } else if (lastEventType === 'error') {
+                statusLine.style.display = 'none';
+                bubble.style.display = 'block';
+                bubble.textContent = data;
+                feedbackDiv.style.display = 'flex';
+              } else {
+                // Regular data token
+                statusLine.style.display = 'none';
+                bubble.style.display = 'block';
+                feedbackDiv.style.display = 'flex';
+                responseText += data;
+                bubble.textContent = responseText;
+              }
+              scrollToBottom();
+              lastEventType = 'message'; // reset
+            }
+          }
+        }
+      } catch (e) {
+        statusLine.style.display = 'none';
+        bubble.style.display = 'block';
+        bubble.textContent = 'Connection error. Please try again.';
+        feedbackDiv.style.display = 'flex';
+      } finally {
+        if (!responseText && bubble.style.display === 'none') {
+          statusLine.style.display = 'none';
+          bubble.style.display = 'block';
+          bubble.textContent = 'No response. Please try again.';
+          feedbackDiv.style.display = 'flex';
+        }
+        isStreaming = false;
+        document.getElementById('sendBtn').disabled = false;
+        input.focus();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Field embedding cache — large binary, machine-specific
+# Recomputed automatically on first startup from Snowflake metadata
+field_embeddings_cache.json
