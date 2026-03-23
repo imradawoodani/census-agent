@@ -2,7 +2,7 @@
 
 A production-quality chat agent that answers natural language questions about the US population using the 2020 SafeGraph Open Census dataset (ACS block-group level). Built on Snowflake, DigitalOcean Inference, and Cohere embeddings.
 
-**Live demo:** https://your-app.ondigitalocean.app
+**Live demo:** [https://your-app.ondigitalocean.app](https://census-agent-o5o2c.ondigitalocean.app/)
 
 Need to replace this URL after I deploy
 
@@ -146,7 +146,3 @@ pytest tests/ --live       # includes live Snowflake + LLM tests
 3. DO Dashboard → Apps → Create App → connect your repo
 4. Add env vars as encrypted secrets (see `.env.example` for the full list)
 5. Deploy and URL appears in about 4 minutes
-
-Verify: `GET https://your-app.ondigitalocean.app/api/health` should return `{"status":"ok","snowflake":true}`.
-
-(replace once deployed)
