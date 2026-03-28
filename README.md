@@ -3,8 +3,7 @@
 A production-quality chat agent that answers natural language questions about the US population using the 2020 SafeGraph Open Census dataset (ACS block-group level). Built on Snowflake, DigitalOcean Inference, and Cohere embeddings.
 
 **Live demo:** [https://your-app.ondigitalocean.app](https://census-agent-o5o2c.ondigitalocean.app/)
-
-Need to replace this URL after I deploy
+(not live right now)
 
 ---
 
